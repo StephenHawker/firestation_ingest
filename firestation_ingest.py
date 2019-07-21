@@ -33,6 +33,7 @@ class DatabaseLoadError(Exception):
     Keyword arguments:
     Exception -- Exception
     """
+
     def __init__(self, data):
         self.data = data
 
@@ -46,6 +47,7 @@ class FirestationIngestError(Exception):
     Keyword arguments:
     Exception -- Exception
     """
+
     def __init__(self, data):
         self.data = data
 
@@ -109,7 +111,7 @@ def main():
 
         firestatiom_html = get_pagedata(firestation_url, f_value)
 
-        #TODO Deal with changes and updates
+        # TODO Deal with changes and updates
 
         with io.open(temp_file, "w", encoding="utf-8") as f:
             f.write(firestatiom_html)
@@ -118,17 +120,18 @@ def main():
 
         save_tab_as_csv(the_table, csv_file)
 
-        #read back firestation data in to do calcs
+        # read back firestation data in to do calcs
         df_fs = pandas.read_csv(csv_file)
 
-        #get lat/lon for the file of lookup addresses
+        # get lat/lon for the file of lookup addresses
         df_lkp = get_lat_long_lkp_addresses(lkp_addresses_file)
 
-        #Process lookups to get top n, get as json fragment
-        process_lkp_list(df_lkp, df_fs, top_n=number_closest, json_file=firestation_nearest_json_File, b_travel=b_travel)
+        # Process lookups to get top n, get as json fragment
+        process_lkp_list(df_lkp, df_fs, top_n=number_closest, json_file=firestation_nearest_json_File,
+                         b_travel=b_travel)
 
-        #Process lookups to get top n, and get travel time as json fragment
-        #process_lkp_list_with_travel(df_lkp, df_fs, top_n=number_closest, json_file=firestation_nearest_json_with_travel)
+        # Process lookups to get top n, and get travel time as json fragment
+        # process_lkp_list_with_travel(df_lkp, df_fs, top_n=number_closest, json_file=firestation_nearest_json_with_travel)
 
         LOGGER.info('Completed run.')
 
@@ -157,7 +160,7 @@ def get_pagedata(site_url, form_value):
     site_url -- Site URL to post to
     form_values -- form values to post
     """
-    form_val = {form_value : '%', 'Submit' : 'Select'}
+    form_val = {form_value: '%', 'Submit': 'Select'}
     form_data = urllib.parse.urlencode(form_val)
     header = {"Content-type": "application/x-www-form-urlencoded",
               "Accept": "text/plain", "Referer": "http://www.firestations.org.uk/Fire_Stations_Page.php"}
@@ -189,6 +192,7 @@ def get_pagedata(site_url, form_value):
 
     return output_html
 
+
 ############################################################
 # Get table of data
 ############################################################
@@ -203,6 +207,7 @@ def get_table(html, table_class):
     table = soup.find('table', {'class': table_class})
 
     return table
+
 
 ############################################################
 # take table of data and convert to csv
@@ -220,7 +225,7 @@ def save_tab_as_csv(tab, csv_file):
     td_count = 0
 
     for table_row in tab.findAll('tr'):
-        #row 1, store column count and append extra lat & lon cols
+        # row 1, store column count and append extra lat & lon cols
         if row_marker == 1:
             td_count = column_marker
             output_row.append("lat")
@@ -237,20 +242,20 @@ def save_tab_as_csv(tab, csv_file):
 
             column_marker += 1
 
-            #Get link in detail for first column in row
+            # Get link in detail for first column in row
             if column_marker == 1:
                 fs_link = ""
 
                 for link in column.findAll('a', href=True):
-                    #print(link['href'])
+                    # print(link['href'])
                     fs_link = link['href']
-                    #Get latitude qs value
+                    # Get latitude qs value
                     lat = get_qs_value(fs_link, 'lat')
-                    #print("lat: " + str(lat))
-                    #Get longitude qs value
+                    # print("lat: " + str(lat))
+                    # Get longitude qs value
                     lon = get_qs_value(fs_link, 'lon')
-                    #print("lon: " + str(lon))
-                    #TODO get_accuracy(row)
+                    # print("lon: " + str(lon))
+                    # TODO get_accuracy(row)
 
                 # Append first column header as not in data
                 if row_marker == 1:
@@ -261,7 +266,7 @@ def save_tab_as_csv(tab, csv_file):
             else:
                 output_row.append(column.text)
 
-             #append extra derived cols
+            # append extra derived cols
             if column_marker == td_count:
                 output_row.append(str(lat))
                 output_row.append(str(lon))
@@ -275,6 +280,7 @@ def save_tab_as_csv(tab, csv_file):
         writer = csv.writer(csvfile)
         writer.writerows(output_rows)
 
+
 ############################################################
 # TODO - Get accuracy based on font colour
 ############################################################
@@ -284,10 +290,12 @@ def get_accuracy(row_string):
     Keyword arguments:
     row_string -- html row string
     """
-   # WHITE = plot is accurate(i.e.on correct building) - style='color:white;'
-   # RED = plot is not accurate(i.e. not on correct building) - style='color:red;'
-   # YELLOW = plot is very rough(i.e.only at start of street)- style='color:yellow;'
-   # BLUE = no plot - can you help?- style='color:blue;'
+
+
+# WHITE = plot is accurate(i.e.on correct building) - style='color:white;'
+# RED = plot is not accurate(i.e. not on correct building) - style='color:red;'
+# YELLOW = plot is very rough(i.e.only at start of street)- style='color:yellow;'
+# BLUE = no plot - can you help?- style='color:blue;'
 
 ############################################################
 # Process the base addresses, get lat/lon from postcode
@@ -310,7 +318,6 @@ def get_lat_long_lkp_addresses(lkp_addresses_file):
     lon_list = []
 
     for index, row in df.iterrows():
-
         pc_json = do_postcode_lookup(postcode_api_url, row['postcode'])
 
         json_str = json.dumps(pc_json)
@@ -343,7 +350,6 @@ def process_lkp_list(df_lkp, firestations_df, top_n, json_file, b_travel):
     lkp_list = []
 
     for index, row in df_lkp.iterrows():
-
         nearest_list = []
 
         lat_value = row['latitude']
@@ -356,16 +362,18 @@ def process_lkp_list(df_lkp, firestations_df, top_n, json_file, b_travel):
 
         base_point = (lat_value, lon_value)  # (lat, lon)
 
-        #Return sorted list of nearest by distance
-        df_fs_dist_list = create_nearest_list(base_point, firestations_df=firestations_df, top_n=top_n, bln_travel_times=b_travel)
+        # Return sorted list of nearest by distance
+        df_fs_dist_list = create_nearest_list(base_point, firestations_df=firestations_df, top_n=top_n,
+                                              bln_travel_times=b_travel)
 
         lkp_list.append(df_fs_dist_list)
 
         r_list["lkpaddress"].append(lkp_list)
-        #r_list["neareststations"].append(df_fs_dist_list)
+        # r_list["neareststations"].append(df_fs_dist_list)
 
-    #save as json
+    # save as json
     json.dump(r_list, open(json_file, "w"))
+
 
 ############################################################
 # Read firestations into a data frame, take a vector point passed
@@ -385,7 +393,7 @@ def create_nearest_list(base_point, firestations_df, top_n, bln_travel_times):
         lat = row['lat']
         lon = row['lon']
         point = (lat, lon)
-        #Get as the crow files haversine distance
+        # Get as the crow files haversine distance
         dist = get_haversine_dist(base_point, point)
 
         distance_list.append(dist)
@@ -393,10 +401,10 @@ def create_nearest_list(base_point, firestations_df, top_n, bln_travel_times):
     df_fs_dist = firestations_df
     df_fs_dist['distance'] = distance_list
 
-    #sort by distance ascending
+    # sort by distance ascending
     df_fs_dist.sort_values(by=['distance'], inplace=True)
 
-    #Get top n
+    # Get top n
     df_fs_dist_ret = df_fs_dist[:int(top_n)]
 
     lst_json = []
@@ -414,7 +422,7 @@ def create_nearest_list(base_point, firestations_df, top_n, bln_travel_times):
         lon = rw['lon']
         point = (lat, lon)
 
-        #Get travel time if required
+        # Get travel time if required
         if bln_travel_times:
             lst_travel_times = get_travel_times(base_point, point)
             lst_travel.append(lst_travel_times)
@@ -423,6 +431,7 @@ def create_nearest_list(base_point, firestations_df, top_n, bln_travel_times):
         lc += 1
 
     return lst_json
+
 
 ############################################################
 # untangle_utf8
@@ -433,12 +442,12 @@ def untangle_utf8(match):
     Keyword arguments:
     match -- json string with unicode issues...
     """
-    escaped = match.group(0)                   # '\\u00e2\\u0082\\u00ac'
-    hexstr = escaped.replace(r'\u00', '')      # 'e282ac'
-    buffer = codecs.decode(hexstr, "hex")      # b'\xe2\x82\xac'
+    escaped = match.group(0)  # '\\u00e2\\u0082\\u00ac'
+    hexstr = escaped.replace(r'\u00', '')  # 'e282ac'
+    buffer = codecs.decode(hexstr, "hex")  # b'\xe2\x82\xac'
 
     try:
-        return buffer.decode('utf8')           # '€'
+        return buffer.decode('utf8')  # '€'
     except UnicodeDecodeError:
         print("Could not decode buffer: %s" % buffer)
 
@@ -448,7 +457,6 @@ def untangle_utf8(match):
 # at 2 different times
 ############################################################
 def get_travel_times(start_point, end_point):
-
     travel_times = []
     distance_matrix_api_key = configImport["firestation.api_key"]
 
@@ -498,6 +506,7 @@ def get_qs_value(url, query_string):
         return ""
     except Exception:
         raise Exception("Error in get_qs_value - %s %s ", url, query_string)
+
 
 ############################################################
 # Get haversine distance
@@ -558,8 +567,8 @@ def get_travel_time(api_key, start_point, end_point, dept_time):
 
         gmaps = googlemaps.Client(key=api_key)
         now = datetime.datetime.now()
-        directions_result = gmaps.directions(start_point, #("52.141366,-0.479573",
-                                             end_point, #"52.141366,-0.489573",
+        directions_result = gmaps.directions(start_point,  # ("52.141366,-0.479573",
+                                             end_point,  # "52.141366,-0.489573",
                                              mode="driving",
                                              avoid="ferries",
                                              departure_time=dept_time)
@@ -576,13 +585,13 @@ def get_travel_time(api_key, start_point, end_point, dept_time):
         LOGGER.error("Error in get_travel_time - please check:" + str(exrec.data))
         raise Exception("Error in get_travel_time")
 
+
 ############################################################
 # Get EPOCH days ahead
 ############################################################
 def next_weekday(d, weekday):
-
     days_ahead = weekday - d.weekday()
-    if days_ahead <= 0: # Target day already happened this week
+    if days_ahead <= 0:  # Target day already happened this week
         days_ahead += 7
 
     return d + datetime.timedelta(days_ahead)
